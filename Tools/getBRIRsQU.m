@@ -53,7 +53,7 @@ if isempty(PER_HRTF) || ~isequal(PER_strRoom,strRoom)
     % Select room
     switch(upper(strRoom))
         case 'ANECHOIC'
-            filename = fullfile(xml.dbGetFile('impulse_responses/qu_kemar_anechoic/QU_KEMAR_anechoic_3m.wav'));
+            filename = fullfile(xml.dbGetFile('impulse_responses/qu_kemar_anechoic/QU_KEMAR_anechoic_3m.sofa'));
         otherwise
             error('Room ''%s'' is not supported.',upper(strRoom));
     end
