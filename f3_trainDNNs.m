@@ -32,7 +32,16 @@ nHiddenLayers = numel(nHiddenNodes);
 %
 % Get to correct directory and add working directories to path
 gitRoot = fileparts(fileparts(mfilename('fullpath')));
-dataRoot = get_data_root;
+[dataRoot, twoearsRoot] = get_data_root;
+
+% Add TwoEars WP1 functionality
+addpath(genpath([twoearsRoot, filesep, 'binaural-simulator', filesep, 'src']));
+
+% Add TwoEars AFE functionality
+addpath(genpath([twoearsRoot, filesep, 'auditory-front-end', filesep, 'src']));
+
+% Add TwoEars tools
+addpath(genpath([twoearsRoot, filesep, 'main', filesep, 'src']));
 
 % Add local tools
 addpath Tools
@@ -104,10 +113,11 @@ strFeatNN = fullfile(strRootFeat, sprintf('%s_channel%d', preset, channel));
 load(strFeatNN);
 
 if sum(featureIdx==3)
-%    % Add random noise to CC features
+    % Add random noise to CC features
 %    train_x(:,ccIdx) = train_x(:,ccIdx) + 0.6 * rand(size(train_x(:,ccIdx)));
+
     % Add random noise to train features
-    train_x = train_x + 0.6 * rand(size(train_x));
+    train_x = train_x + 0.4 * rand(size(train_x));
 end
 
 % Select features based on feature type
