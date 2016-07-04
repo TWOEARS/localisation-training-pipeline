@@ -43,47 +43,19 @@ end
 %% *****************  GET USER-SPECIFIC ROOT DIRECTORIES  *****************
 % 
 % 
-% Select user-dependent root directory for the audio files
-switch(upper(getUser))
-    case 'NING'
-        % Ning
-        root_speech = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
-        root_noise  = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
-        root_brir   = fullfile(xml.dbPath,filesep,'impulse_responses',filesep);
-        root_fspace = '/Users/ning/work/TwoEars/data/Speaker_Localisation';
-    case 'AC1NMX'
-        % Ning
-        root_speech = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
-        root_noise  = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
-        root_brir   = fullfile(xml.dbPath,filesep,'impulse_responses',filesep);
-        root_fspace = '/data/ac1nmx/data/Speaker_Localisation';
-    case 'ELEK-D0170'
-        % Tobias
-        root_speech = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
-        root_noise  = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
-        root_brir   = fullfile(xml.dbPath,filesep,'impulse_responses',filesep);
-        root_fspace = 'M:\Research\Matlab\Projects\MCT';
-    otherwise
-        error('Root directories are not specified for ''%s'' ! Edit the root entries in ''%s.m''.',upper(getUser),mfilename)
-end
-
-
-%% *****************  GET USER-SPECIFIC ROOT DIRECTORIES  *****************
-% 
-% 
 % Select output
 if isempty(select)
     rootDir = {root_speech root_noise root_brir};
 else
    switch(lower(select)) 
        case 'speech'
-           rootDir = root_speech;
+           rootDir = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
        case 'noise'
-           rootDir = root_noise;
+           rootDir = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
        case 'brir'
-           rootDir = root_brir;
+           rootDir = fullfile(xml.dbPath,filesep,'impulse_responses',filesep);
        case 'fspace'
-           rootDir = root_fspace;
+           rootDir = '/home/hagen/data/sound_localisation';
        otherwise
            error('Requested root directory ''%s'' is not supported!',select)
    end
