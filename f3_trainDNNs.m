@@ -104,10 +104,8 @@ strFeatNN = fullfile(strRootFeat, sprintf('%s_channel%d', preset, channel));
 load(strFeatNN);
 
 if sum(featureIdx==3)
-%    % Add random noise to CC features
-%    train_x(:,ccIdx) = train_x(:,ccIdx) + 0.6 * rand(size(train_x(:,ccIdx)));
-    % Add random noise to train features
-    train_x = train_x + 0.6 * rand(size(train_x));
+    % If using CC, add random noise to train features
+    train_x = train_x + 0.4 * rand(size(train_x));
 end
 
 % Select features based on feature type
