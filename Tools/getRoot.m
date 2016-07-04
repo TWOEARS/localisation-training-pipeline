@@ -54,8 +54,8 @@ else
            rootDir = fullfile(xml.dbPath,filesep,'sound_databases',filesep);
        case 'brir'
            rootDir = fullfile(xml.dbPath,filesep,'impulse_responses',filesep);
-       case 'fspace'
-           rootDir = '/home/hagen/data/sound_localisation';
+       case 'data' % this should replace get_data_root in the long run
+           rootDir = fullfile(xml.dbPath,filesep,'learned_models',filesep);
        otherwise
            error('Requested root directory ''%s'' is not supported!',select)
    end
