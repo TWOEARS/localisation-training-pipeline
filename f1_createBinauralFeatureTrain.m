@@ -52,7 +52,8 @@ nSentences = 30;
 switch upper(trainPreset)
     case 'CLEAN'
         % Specify HRTF database that should be used for training
-        hrtfDatabase = 'qu_anechoic';
+        hrtfDatabase = 'impulse_responses/qu_kemar_anechoic/QU_KEMAR_anechoic_3m.sofa';
+        brir = SOFAload(xml.dbGetFile(hrtfDatabase));
 
         % Azimuth of speech source
         azimuth_Target = allAzimuths; 
@@ -62,7 +63,8 @@ switch upper(trainPreset)
         
     case 'MCT-DIFFUSE'
         % Specify HRTF database that should be used for training
-        hrtfDatabase = 'qu_anechoic';
+        hrtfDatabase = 'impulse_responses/qu_kemar_anechoic/QU_KEMAR_anechoic_3m.sofa';
+        brir = SOFAload(xml.dbGetFile(hrtfDatabase));
         
         % Azimuth of target source
         azimuth_Target = allAzimuths;
@@ -208,7 +210,7 @@ for jj = 1:nAzimuths
         target = target ./ rms(target);
 
         % Spatialise speech signal
-        sig_target = spatializeAudio(target,fsHz_HRTF,azimuth,hrtfDatabase);
+        sig_target = spatializeAudio(target,fsHz_HRTF,azimuth,brir);
 
         % Number of samples
         nSamples_HRTF = size(sig_target, 1);
@@ -253,7 +255,7 @@ for jj = 1:nAzimuths
             noise = noise ./ repmat(rms(noise,1),[nSamples_HRTF 1]);
 
             % Spatialise noise signal
-            sig_noise_diff = spatializeAudio(noise,fsHz_HRTF,azimuth_Noise,hrtfDatabase);
+            sig_noise_diff = spatializeAudio(noise,fsHz_HRTF,azimuth_Noise,brir);
 
             % Resample noise signal to fsHz_Mix
             if fsHz_Mix ~= fsHz_HRTF
@@ -398,4 +400,4 @@ if ~exist(strSaveStr, 'file')
         'AFE_request_mix', {AFE_request_mix} );
     save(strSaveStr, 'R');
 end
-
+% vim: set sw=4 ts=4 et tw=90:

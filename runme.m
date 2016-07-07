@@ -16,7 +16,7 @@
 
 % Training parameters
 preset = 'MCT-DIFFUSE';         % Multiconditional training
-azRes = 1;                      % Azimuth resolution in degrees
+azRes = 5;                      % Azimuth resolution in degrees
 azimuthVector = 0:azRes:359;	% Vector of azimuths considered
 
 startTwoEars('Config.xml');

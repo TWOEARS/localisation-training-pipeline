@@ -1,16 +1,20 @@
 function f1_createBinauralFeatureDev(azimuthVector, azRes)
-%
 % f1_createBinauralFeatureTrain(azimuthVector, azRes)
 %
-%
+
+%% Settings
+hrtfDatabaseList = { ...
+    'impulse_responses/surrey_cortex_rooms/SURREY_CORTEX_ROOM_B.sofa'; ...
+    'impulse_responses/surrey_cortex_rooms/SURREY_CORTEX_ROOM_B.sofa'; ...
+    };
+
 
 if nargin < 2
     azRes = 5;
 end
 
-
-%% Install software 
-% 
+%% Install software
+%
 dataRoot = get_data_root;
 
 % Get to correct directory and add working directories to path
@@ -20,7 +24,7 @@ gitRoot = fileparts(fileparts(mfilename('fullpath')));
 addpath Tools
 
 % Add common scripts
-addpath([gitRoot, filesep, 'tools', filesep, 'common']);
+%addpath([gitRoot, filesep, 'tools', filesep, 'common']);
 
 allAzimuths = convertAzimuthsSurreyToWP1(-90:5:90);
 %allAzimuths = convertAzimuthsSurreyToWP1(-15:5:-5);
@@ -29,14 +33,14 @@ if nargin < 1
 end
 
 %% Parameters
-% 
+%
 % BRIR
 %hrtfDatabaseList = {'SURREY_ROOM_B','SURREY_ROOM_D'};
-hrtfDatabaseList = {'SURREY_ROOM_B', 'SURREY_ROOM_C'};
-nRooms = length(hrtfDatabaseList);
+%hrtfDatabaseList = {'SURREY_ROOM_B', 'SURREY_ROOM_C'};
+nDatabases = length(hrtfDatabaseList);
 
 % Sampling frequency in Herz of the noisy speech mixtures
-fsHz = 16E3; 
+fsHz = 16E3;
 
 % Sampling frequency (related to HRTF processing, DO NOT CHANGE!)
 fsHz_HRTF = 16E3;
@@ -55,7 +59,7 @@ end
 nAzimuths = length(azimuthVector);
 
 %% Sound databases
-% 
+%
 rootGRID = fullfile(xml.dbPath, 'sound_databases', 'grid_subset');
 
 % Test set
@@ -69,7 +73,8 @@ fclose(fid);
 allFiles = allFiles{1};
 nSentences = numel(allFiles);
 
-nMixtures = 100;
+%nMixtures = 100;
+nMixtures = 1; % for debugging
 idx = randperm(nSentences, nMixtures);
 allFiles = allFiles(idx);
 
@@ -78,7 +83,7 @@ dObj = dataObject([],fsHz,[],2);
 
 % Create managers
 mObj = manager(dObj, AFE_request, AFE_param);
-     
+
 
 %% Framework for creating noisy speech
 %
@@ -94,12 +99,17 @@ end
 
 % Reset wavefile counter
 iter  = 1;
-niters = nMixtures*nAzimuths*nRooms;
+niters = nMixtures*nAzimuths*nDatabases;
 tstart = tic;
+
+% Preload HRTF databases
+for nn = 1:nDatabases
+    brir{nn} = SOFAload(hrtfDatabaseList{nn});
+end
 
 % Loop over the number of sentences
 for ii = 1:nMixtures
-    
+
     % Read sentence
     wavfn = sprintf('%s/%s.wav', rootGRID, strrep(allFiles{ii}, '_', '/'));
     [target,fsHz_Audio] = audioread(wavfn);
@@ -117,14 +127,13 @@ for ii = 1:nMixtures
     target = target ./ rms(target);
 
     for jj = 1:nAzimuths
-        
+
         azimuth = azimuthVector(jj);
-    
-        for nn = 1:nRooms
-            
-            hrtfDatabase = hrtfDatabaseList{nn};
+
+        for nn = 1:nDatabases
+
             % Spatialise speech signal
-            binaural = spatializeAudio(target,fsHz_HRTF,convertAzimuthsWP1ToSurrey(azimuth),hrtfDatabase);
+            binaural = spatializeAudio(target, fsHz_HRTF, azimuth, brir{nn});
 
             % Resample speech signal to fsHz_Mix
             if fsHz ~= fsHz_HRTF

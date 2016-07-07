@@ -1,4 +1,4 @@
-function binaural = spatializeAudio(audio,fsHz,azimuth,room)
+function binaural = spatializeAudio(audio,fsHz,azimuth,sofa)
 
 % Check for proper input arguments
 if nargin ~= 4
@@ -17,9 +17,12 @@ if nSources ~= nAzim
     error('The number of sources must match the number of azimuths.')
 end
 
-% Get BRIRs
-[brir,fsHzRef] = getBRIRs(room,azimuth);
-    
+% Sampling rate of impulse response
+fsHzRef = sofa.Data.SamplingRate;
+for ii = 1:nAzim
+    brir(ii, :, :) = sofaGetImpulseResponse(sofa, azimuth, 1, 1);
+end
+
 % Check if fsHzRef are consistent
 if any(fsHzRef(1)~= fsHzRef)
     error('BRIR catalog sampling frequency mismatch across azimuths.')
@@ -31,12 +34,12 @@ end
 if fsHz > fsHzRef
     % Upsample BRIR catalog
     brir = resampleData(brir, fsHzRef, fsHz);
-    
+
     bDownSample = false;
 elseif ~isequal(fsHz,fsHzRef)
     % Resample audio
     audio = resample(audio, fsHzRef, fsHz);
-    
+
     bDownSample = true;
 else
     bDownSample = false;
@@ -47,7 +50,7 @@ binaural = zeros(size(audio,1),2);
 
 % Loop over number of audio files
 for ii = 1 : nSources
-    
+
     % Filter input signal with HRTFs
     for cc = 1 : size(brir,2)
         binaural(:,cc) = binaural(:,cc) + fftfilt(brir(:,cc,ii),audio(:,ii));
@@ -57,7 +60,7 @@ end
 if bDownSample
     % Down-sample audio to original fsHz
     binaural = resample(binaural,fsHz,fsHzRef);
-    
+
     % Trim signal
     binaural = binaural(1:nSamplesRef,:,:);
 end
