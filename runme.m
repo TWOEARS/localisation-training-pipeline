@@ -28,7 +28,7 @@ f1_createBinauralFeatureTrain(azimuthVector, preset, azRes);
 f1_createBinauralFeatureDev(azimuthVector, azRes);
 
 % Process features (normalisation etc)
-AFE_param = initialise_AFE_parameters;
+AFE_param = initialiseAfeParameters();
 channelVector = 1:AFE_param.fb_nChannels;
 f2_processBinauralFeatureTrain(channelVector, preset, azRes);
 f2_processBinauralFeatureDev(channelVector, preset, azRes);
