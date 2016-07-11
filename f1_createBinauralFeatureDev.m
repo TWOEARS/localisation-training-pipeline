@@ -165,7 +165,7 @@ for ii = 1:nMixtures
 
             ic = dObj.ic{1}.Data(:);
 
-            seqTag = sprintf('az%d_%s_%s', azimuth, allFiles{ii}, hrtfDatabaseList{nn});
+            seqTag = sprintf('az%d_%s_%s_HRTF%d', azimuth, allFiles{ii}, nn);
 
             for c = 1:AFE_param.fb_nChannels
 
