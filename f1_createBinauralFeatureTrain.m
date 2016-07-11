@@ -246,6 +246,9 @@ for jj = 1:nAzimuths
 
             % Spatialise noise signal
             %size(squeeze(brirDiffuseNoise(:, :, 1)))
+            % TODO: check preformance and signal length of convolution compared to
+            % `fftfilt(brir(:,cc,ii),audio(:,ii));` as it was implemented in
+            % spatializeAudio()
             sigDiffuseNoise = [];
             sigDiffuseNoise(:, :, 1) = ... % convolve all signals for the left ear
                 convolution(squeeze(brirDiffuseNoise(:, :, 1))', noise);
@@ -253,10 +256,6 @@ for jj = 1:nAzimuths
                 convolution(squeeze(brirDiffuseNoise(:, :, 2))', noise);
             sigDiffuseNoise = squeeze(sum(sigDiffuseNoise, 2)); % sum up binaural signals
             sigDiffuseNoise = sigDiffuseNoise(1:nSamplesTarget, :); % fix samples length
-            %for aa = 1:numel(azimuthNoise)
-            %    sigDiffuseNoise = convolution(squeeze(brirDiffuseNoise(aa,:,:)), noise);
-            %end
-            %sigDiffuseNoise = spatializeAudio(noise,FS_HRTF,azimuthNoise,brir);
 
             % Resample noise signal to FS_MIXTURES
             if FS_MIXTURES ~= FS_HRTF
