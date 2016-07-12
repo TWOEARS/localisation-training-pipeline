@@ -41,7 +41,7 @@ addpath Tools
 addpath([gitRoot, filesep, 'tools', filesep, 'common']);
 
 % Add Netlab for GMMs
-addpath([gitRoot, filesep, 'tools', filesep, 'GMM_Netlab']);
+addpath(['Tools', filesep, 'GMM_Netlab']);
 
 % Reset internal states of random number generator. This allows to use
 % different settings, while still obtaining the "same" random matrix with
@@ -58,7 +58,7 @@ end
 %
 
 % Define user-specific root directory for storing the models
-AFE_param = initialise_AFE_parameters;
+AFE_param = initialiseAfeParameters;
 strRootFeat = fullfile(dataRoot, 'TrainFeatures');
 strRootFeat = sprintf('%s_%s_%ddeg_%dchannels', strRootFeat, preset, azRes, AFE_param.fb_nChannels);
 strRootFeatDev = fullfile(dataRoot, 'DevFeatures');
@@ -115,7 +115,7 @@ C = struct('ftrType', featureType, ...
            'normMethod',normMethod, ...
            'featNorm', {cell(nChannels,1)}, ...
            'AFE_param', R.AFE_param, ...
-           'AFE_request_mix', {R.AFE_request_mix}, ...
+           'AFE_requestMix', {R.AFE_requestMix}, ...
            'nAzimuths', nAzimuths, ...
            'azimuths', R.azimuth);
 
@@ -190,4 +190,4 @@ C.gmmFinal = gmmFinal;
 % Store GMM classifier
 saveStr = fullfile(strRootModels, strClassifier);
 save([saveStr,'.mat'],'C');
-
+% vim: set sw=4 ts=4 et tw=90:

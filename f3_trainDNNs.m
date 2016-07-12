@@ -1,14 +1,14 @@
 function f3_trainDNNs(channel, preset, featureType, azRes)
 % f3_trainDNNs  Sound localisation using Deep Neural Network.
 %
-% 
-%USAGE  
+%
+%USAGE
 %  f3_trainDNNs(channel, preset, featureType, azRes)
 %
 %INPUT ARGUMENTS
 %   channel : channel number for training. Useful for parellel training
 %     azRes : azimuth resolution for training DNNs
-% 
+%
 %
 % Ning Ma, 29 Jan 2015
 %
@@ -40,14 +40,14 @@ addpath Tools
 % Add common scripts
 addpath([gitRoot, filesep, 'tools', filesep, 'common']);
 
-% Add DeepLearnToolbox 
-addpath(genpath([gitRoot, filesep, 'tools', filesep, 'DeepLearnToolbox']));
+% Add DeepLearnToolbox
+addpath(genpath(['Tools', filesep, 'DeepLearnToolbox']));
 
 % Reset internal states of random number generator. This allows to use
 % different settings, while still obtaining the "same" random matrix with
 % sound source positions.
 try
-    % Since MATLAB 2011a 
+    % Since MATLAB 2011a
     rng(0);
 catch
     % For older versions
@@ -77,7 +77,7 @@ for n = 1:length(features)
 end
 
 % Define user-specific root directory for storing the models
-AFE_param = initialise_AFE_parameters;
+AFE_param = initialiseAfeParameters;
 strRootFeat = fullfile(dataRoot, 'TrainFeatures');
 strRootFeat = sprintf('%s_%s_%ddeg_%dchannels', strRootFeat, preset, azRes, AFE_param.fb_nChannels);
 
@@ -131,7 +131,7 @@ C = struct('ftrType', featureType, ...
            'nAzimuths', nAzimuths, ...
            'nFeatures', nFeatures, ...
            'AFE_param', {R.AFE_param}, ...
-           'AFE_request_mix', {R.AFE_request_mix});
+           'AFE_requestMix', {R.AFE_requestMix});
 
 
 % Initialise a neural network with a single hidden layer
@@ -184,7 +184,7 @@ while true
         else
             nIterations = 1;
         end
-        
+
         bestDevError = 1;
         bestNN = nn;
         for iter = 1:nIterations
@@ -198,7 +198,7 @@ while true
             else
                 nn.learningRate = opt.initial_learning_rate;
             end
-            
+
             nEpochsExtraCounter = 0;
             prevDevError = 1;
             noImprovmentCount = 0;
@@ -282,7 +282,7 @@ while true
                 nn.learningRate = nn.learningRate * opt.scaling_learning_rate;
                 if nn.learningRate < opt.final_learning_rate
                     nn.learningRate = opt.final_learning_rate;
-                    nEpochsExtraCounter = nEpochsExtraCounter + 1; 
+                    nEpochsExtraCounter = nEpochsExtraCounter + 1;
                 end
 
                 % Terminate after nEpochsExtra epochs when the learning rate
@@ -290,7 +290,7 @@ while true
                 if nEpochsExtraCounter > opt.num_epochs_extra
                     break;
                 end
-                
+
             end
             if C.devError > bestDevError
                 fprintf('-- Revert to previous best state, dev error: %.2f%%\n', bestDevError*100);
@@ -307,7 +307,7 @@ while true
         fprintf('%s\n', strModels);
 
     end
- 
+
     % Check the number of hidden layers
     if nCurHiddenLayers == nHiddenLayers
         break;
@@ -322,4 +322,4 @@ while true
     nn.p{end}   = nn2.p{end-1};     nn.p{end+1}     = nn2.p{end};
 end
 
-
+% vim: set sw=4 ts=4 et tw=90:
