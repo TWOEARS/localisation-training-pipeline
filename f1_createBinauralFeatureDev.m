@@ -7,6 +7,7 @@ hrtfDatabaseList = { ...
     %'impulse_responses/surrey_cortex_rooms/SURREY_CORTEX_ROOM_B.sofa'; ...
     %'impulse_responses/surrey_cortex_rooms/SURREY_CORTEX_ROOM_D.sofa'; ...
     'impulse_responses/twoears_kemar_adream/TWOEARS_KEMAR_ADREAM_pos2.sofa'; ...
+    'impulse_responses/twoears_kemar_adream/TWOEARS_KEMAR_ADREAM_pos3.sofa'; ...
     };
 
 
@@ -74,9 +75,8 @@ fclose(fid);
 allFiles = allFiles{1};
 nSentences = numel(allFiles);
 
-% FIXME
-%nMixtures = 100;
-nMixtures = 1; % for debugging
+nMixtures = 100;
+%nMixtures = 1; % for debugging
 idx = randperm(nSentences, nMixtures);
 allFiles = allFiles(idx);
 
@@ -105,7 +105,6 @@ timeStart = tic;
 
 % Preload HRTF databases
 for nn = 1:nDatabases
-    hrtfDatabaseList{nn}
     brirSofa{nn} = SOFAload(xml.dbGetFile(hrtfDatabaseList{nn}));
 end
 
