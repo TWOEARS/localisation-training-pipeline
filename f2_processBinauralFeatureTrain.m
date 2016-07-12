@@ -21,14 +21,14 @@ dataRoot = get_data_root;
 gitRoot = fileparts(fileparts(mfilename('fullpath')));
 
 % Add local tools
-addpath Tools
+%addpath Tools
 
 % Add common scripts
 addpath([gitRoot, filesep, 'tools', filesep, 'common']);
 
 
 
-AFE_param = initialise_AFE_parameters;
+AFE_param = initialiseAfeParameters();
 featRoot = fullfile(dataRoot, 'TrainFeatures');
 featRoot = sprintf('%s_%s_%ddeg_%dchannels', featRoot, preset, azRes, AFE_param.fb_nChannels);
 
@@ -125,4 +125,4 @@ for c = channelVector
     save(strFeatNN, 'R', 'normFactors', 'train_x', 'train_y', '-v7.3');
     fprintf('Done! %s\n', strFeatNN);
 end
-
+% vim: set sw=4 ts=4 et tw=90:

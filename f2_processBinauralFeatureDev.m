@@ -29,7 +29,7 @@ addpath([gitRoot, filesep, 'tools', filesep, 'common']);
 
 testAzimuths = convertAzimuthsSurreyToWP1(-90:5:90);
 
-AFE_param = initialise_AFE_parameters;
+AFE_param = initialiseAfeParameters;
 
 featRootTrain = fullfile(dataRoot, 'TrainFeatures');
 featRootTrain = sprintf('%s_%s_%ddeg_%dchannels', featRootTrain, preset, azRes, AFE_param.fb_nChannels);
@@ -112,4 +112,4 @@ for ch = channelVector
     save(strFeatNN, 'dev_x', 'dev_y', '-v7.3');
     fprintf('Done! %s\n', strFeatNN);
 end
-
+% vim: set sw=4 ts=4 et tw=90:
