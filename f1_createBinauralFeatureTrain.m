@@ -168,16 +168,17 @@ timeStart = tic;
 
 % Pre-load BRIRs for diffuse noise
 if bNoiseDiffuse
-    for ii = 1:numel(azimuthNoise)
-        brirDiffuseNoise(ii,:,1:2) = sofaGetImpulseResponse(brirSofa, azimuthNoise(ii));
-    end
+    brirDiffuseNoise = sofa.getImpulseResponse(brirSofa, azimuthNoise);
+    brirDiffuseNoise = ...
+        reshape(brirDiffuseNoise, size(brirDiffuseNoise,1), 2, numel(azimuthNoise));
+    brirDiffuseNoise = shiftdim(brirDiffuseNoise, 2);
 end
 for jj = 1:nAzimuths
 
     azimuth = azimuthVector(jj);
 
     % Get BRIR for given azimuth angle
-    brir = sofaGetImpulseResponse(brirSofa, azimuth);
+    brir = sofa.getImpulseResponse(brirSofa, azimuth);
 
     % Select random speech files
     randIdx = randperm(nAudioFiles, N_SENTENCES);

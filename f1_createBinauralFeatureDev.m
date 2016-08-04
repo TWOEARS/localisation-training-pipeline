@@ -135,7 +135,7 @@ for ii = 1:nMixtures
 
             % Spatialise speech signal
             % FIXME: switch database and azimuth loop?
-            brir = sofaGetImpulseResponse(brirSofa{nn}, azimuth);
+            brir = sofa.getImpulseResponse(brirSofa{nn}, azimuth);
             binaural = convolution(brir, target);
             %binaural = spatializeAudio(target, FS_HRTF, azimuth, brir{nn});
 
