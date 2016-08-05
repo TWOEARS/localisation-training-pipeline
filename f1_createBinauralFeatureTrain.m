@@ -1,16 +1,22 @@
 function f1_createBinauralFeatureTrain(azimuthVector, preset, azRes)
+%f1_createBinauralFeatureTrain ...
 %
-% f1_createBinauralFeatureTrain(azimuthVector, preset, azRes)
+%   USAGE
+%       f1_createBinauralFeatureTrain(azimuthVector, preset, azRes)
 %
-%
+%   INPUT PARAMETERS
+%       azimuthVector   -
+%       preset          - 'MCT-DIFFUSE'
+%                         'CLEAN'
+%                         'MCT-DIFFUSE-FRONT'
+%                         'CLEAN-FRONT'
+%       azRes           -
+
 
 %% === Multi-conditional training parameters ===
 %
 % Sampling frequency in Hz of the noisy speech mixtures
 FS_MIXTURES = 16E3;
-%
-% Sampling frequency (related to HRTF processing, DO NOT CHANGE!)
-FS_HRTF = 44.1E3;
 %
 % Number of sentences used for training
 N_SENTENCES = 30;
@@ -35,18 +41,22 @@ if nargin < 1
     azimuthVector = allAzimuths;
 end
 
-%% Install software
+
+%%  Setup software
 %
-dataRoot = get_data_root;
-
-% Get to correct directory and add working directories to path
-gitRoot = fileparts(fileparts(mfilename('fullpath')));
-
 % Add local tools
 addpath Tools
 
-% Add common scripts
-addpath([gitRoot, filesep, 'tools', filesep, 'common']);
+
+%% Folder assingment
+%
+% Tmp folders for training features
+dirFeat = getTmpDirTraining(preset, azRes);
+if exist(dirFeat, 'dir')
+    error('%s folder exists already, please delete it first.', dirFeat);
+else
+    mkdir(dirFeat);
+end
 
 
 % Select preset
@@ -55,6 +65,7 @@ case 'CLEAN'
     % Specify HRTF database that should be used for training
     hrtfDatabase = 'impulse_responses/qu_kemar_anechoic/QU_KEMAR_anechoic_3m.sofa';
     brirSofa = SOFAload(xml.dbGetFile(hrtfDatabase));
+    fsBrir = brirSofa.Data.SamplingRate;
 
     % Azimuth of speech source
     azimuthTarget = allAzimuths;
@@ -66,6 +77,7 @@ case 'MCT-DIFFUSE'
     % Specify HRTF database that should be used for training
     hrtfDatabase = 'impulse_responses/qu_kemar_anechoic/QU_KEMAR_anechoic_3m.sofa';
     brirSofa = SOFAload(xml.dbGetFile(hrtfDatabase));
+    fsBrir = brirSofa.Data.SamplingRate;
 
     % Azimuth of target source
     azimuthTarget = allAzimuths;
@@ -91,7 +103,7 @@ case 'MCT-DIFFUSE'
         nTalkersSpeechShapedNoise = 256;
         nSecondsSpeechShapedNoise = 10;
         noiseFile = sprintf('speech_shaped_noise_%dtalker_%.fkHz_%dsec.mat', ...
-           nTalkersSpeechShapedNoise, FS_HRTF/1000, nSecondsSpeechShapedNoise);
+           nTalkersSpeechShapedNoise, fsBrir/1000, nSecondsSpeechShapedNoise);
         load(fullfile(noiseDir, noiseFile)); % load ssn
     end
 
@@ -109,12 +121,6 @@ AFE_requestSnr = {'ratemap'};
 snrThreshold = -5;
 AFE_param = initialiseAfeParameters();
 
-% Define user-specific root directory for storing the feature space
-featRoot = fullfile(dataRoot, sprintf('TrainFeatures_%s_%ddeg_%dchannels', ...
-                                      preset, azRes, AFE_param.fb_nChannels));
-if ~exist(featRoot, 'dir')
-    mkdir(featRoot);
-end
 
 
 %% ===== Sound databases =================================================
@@ -147,7 +153,7 @@ nSnrTarget = numel(snrDbTarget);
 % Create channel folders
 channelRoot = cell(AFE_param.fb_nChannels, 1);
 for c = 1:AFE_param.fb_nChannels
-    channelRoot{c} = fullfile(featRoot, sprintf('channel%d', c));
+    channelRoot{c} = fullfile(dirFeat, sprintf('channel%d', c));
     if ~exist(channelRoot{c}, 'dir')
         mkdir(channelRoot{c});
     end
@@ -191,27 +197,25 @@ for jj = 1:nAzimuths
         % CREATE DIRECTIONAL TARGET SIGNAL
         % *****************************************************************
         %
+
         % Read sentence
         [target, fsTarget] = audioread(trainAudioFiles{ii});
-
-        % Upsampel input to FS_HRTF, if required
-        if fsTarget ~= FS_HRTF
-            target = resample(target,FS_HRTF,fsTarget);
+        % Upsample input to fsBrir, if required
+        if fsTarget ~= fsBrir
+            target = resample(target, fsBrir, fsTarget);
         end
-
         % Normalise by RMS
         target = target ./ rms(target);
 
         % Spatialise speech signal
         sigTarget = convolution(brir, target);
-        %sigTarget = spatializeAudio(target,FS_HRTF,azimuth,brir);
 
         % Number of samples
         nSamplesTarget = size(sigTarget, 1);
 
         % Resample speech signal to FS_MIXTURES
-        if FS_MIXTURES ~= FS_HRTF
-            sigTarget = resample(sigTarget,FS_MIXTURES,FS_HRTF);
+        if FS_MIXTURES ~= fsBrir
+            sigTarget = resample(sigTarget, FS_MIXTURES, fsBrir);
         end
 
         % *********************************************************************
@@ -230,7 +234,7 @@ for jj = 1:nAzimuths
                 % Apply LTAS of speech to create speech-shaped noise
                 orderFIR = 32;
                 for aa = 1:numel(azimuthNoise)
-                    noise(:,aa) = equalizeLTAS(refLTAS, noise(:,aa), FS_HRTF, orderFIR);
+                    noise(:,aa) = equalizeLTAS(refLTAS, noise(:,aa), fsBrir, orderFIR);
                 end
 
             case 'babble' % Babble noise
@@ -259,8 +263,8 @@ for jj = 1:nAzimuths
             sigDiffuseNoise = sigDiffuseNoise(1:nSamplesTarget, :); % fix samples length
 
             % Resample noise signal to FS_MIXTURES
-            if FS_MIXTURES ~= FS_HRTF
-                sigDiffuseNoise = resample(sigDiffuseNoise, FS_MIXTURES, FS_HRTF);
+            if FS_MIXTURES ~= fsBrir
+                sigDiffuseNoise = resample(sigDiffuseNoise, FS_MIXTURES, fsBrir);
             end
         end
 
@@ -394,7 +398,7 @@ end
 
 %% Save multi-conditional features
 %
-strSaveStr = fullfile(featRoot, strcat(preset,'.mat'));
+strSaveStr = fullfile(dirFeat, strcat(preset,'.mat'));
 
 % Save features
 if ~exist(strSaveStr, 'file')

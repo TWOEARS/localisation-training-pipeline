@@ -1,43 +1,38 @@
 function f2_processBinauralFeatureTrain(channelVector, preset, azRes)
+%f2_processBinauralFeatureTrain ...
 %
-% f2_processBinauralFeatureTrain(channels, preset, azRes)
+%   USAGE
+%       f2_processBinauralFeatureTrain(channels, preset, azRes)
 %
-%  channels : channel vector for processing 1:32
-%
+%   INPUT PARAMETERS
+%       channelVector   -
+%       preset          -
+%       azRes           -
 
 if nargin < 3
     azRes = 5;
 end
-
 if nargin < 2
     preset = 'MCT-DIFFUSE'; % 'CLEAN' 'MCT-DIFFUSE-FRONT' 'CLEAN-FRONT'
 end
 
-%% Install software 
-% 
-dataRoot = get_data_root;
 
-% Get to correct directory and add working directories to path
-gitRoot = fileparts(fileparts(mfilename('fullpath')));
-
-% Add local tools
-%addpath Tools
-
-% Add common scripts
-addpath([gitRoot, filesep, 'tools', filesep, 'common']);
-
-
+%% Folder assingment
+%
+% Tmp folders for training features
+dirFeat = getTmpDirTraining(preset, azRes);
+if ~exist(dirFeat, 'dir')
+    error(['Please run first f1_createBinauralFeatureTrain() in order to create ', ...
+           'missing features.']);
+end
 
 AFE_param = initialiseAfeParameters();
-featRoot = fullfile(dataRoot, 'TrainFeatures');
-featRoot = sprintf('%s_%s_%ddeg_%dchannels', featRoot, preset, azRes, AFE_param.fb_nChannels);
 
-strSaveStr = fullfile(featRoot, preset);
+strSaveStr = fullfile(dirFeat, preset);
 load(strSaveStr);
 if nargin < 1
     channelVector = 1:R.AFE_param.fb_nChannels;
 end
-
 
 %% Prepare features
 %
@@ -82,7 +77,7 @@ for c = channelVector
     for n = 1:nAzimuths
         fprintf('Preparing features for channel %d, azimuth %d... ', c, R.azimuth(n));
         azFrames = 0;
-        chandir = sprintf('%s/channel%d',featRoot,c);
+        chandir = sprintf('%s/channel%d', dirFeat, c);
         htkfiles = sprintf('%s/az%d_*.htk',chandir,R.azimuth(n));
         % Retrieve all file names per azimuth
         all_files = dir(htkfiles);

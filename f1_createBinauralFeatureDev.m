@@ -1,68 +1,59 @@
 function f1_createBinauralFeatureDev(azimuthVector, azRes)
-% f1_createBinauralFeatureTrain(azimuthVector, azRes)
+%f1_createBinauralFeatureDev ...
 %
+%   USAGE
+%       f1_createBinauralFeatureDev(azimuthVector, azRes)
+%
+%   INPUT PARAMETERS
+%       azimuthVector   - used azimuths
+%       azRes           - azimuth resolution of azimuthVector
 
-%% Settings
+if nargin < 2
+    azRes = 5;
+end
+if nargin < 1
+    azimuthVector = 0:azRes:359;
+end
+
+
+%% Configuration
+%
 hrtfDatabaseList = { ...
     %'impulse_responses/surrey_cortex_rooms/SURREY_CORTEX_ROOM_B.sofa'; ...
     %'impulse_responses/surrey_cortex_rooms/SURREY_CORTEX_ROOM_D.sofa'; ...
     'impulse_responses/twoears_kemar_adream/TWOEARS_KEMAR_ADREAM_pos2.sofa'; ...
     'impulse_responses/twoears_kemar_adream/TWOEARS_KEMAR_ADREAM_pos3.sofa'; ...
     };
-
-
-if nargin < 2
-    azRes = 5;
-end
-
-%% Install software
-%
-dataRoot = get_data_root;
-
-% Get to correct directory and add working directories to path
-gitRoot = fileparts(fileparts(mfilename('fullpath')));
-
-% Add local tools
-addpath Tools
-
-% Add common scripts
-%addpath([gitRoot, filesep, 'tools', filesep, 'common']);
-
-allAzimuths = convertAzimuthsSurreyToWP1(-90:5:90);
-%allAzimuths = convertAzimuthsSurreyToWP1(-15:5:-5);
-if nargin < 1
-    azimuthVector = allAzimuths;
-end
-
-%% Parameters
-%
-% BRIR
-%hrtfDatabaseList = {'SURREY_ROOM_B','SURREY_ROOM_D'};
-%hrtfDatabaseList = {'SURREY_ROOM_B', 'SURREY_ROOM_C'};
-nDatabases = length(hrtfDatabaseList);
-
 % Sampling frequency in Herz of the noisy speech mixtures
 FS_MIXTURES = 16E3;
 
-% Sampling frequency (related to HRTF processing, DO NOT CHANGE!)
-FS_HRTF = 44.1E3;
+%%  Setup software
+%
+% Add local tools
+addpath Tools
 
+
+%% Folder assingment
+%
+% Tmp folders for training features
+[~, dirFeatDev] = getTmpDirTraining([], azRes);
+if exist(dirFeatDev, 'dir')
+    error('%s folder exists already, please delete it first.', dirFeatDev);
+else
+    mkdir(dirFeatDev);
+end
+% Sound databases
+rootGRID = fullfile(xml.dbPath, 'sound_databases', 'grid_subset');
+
+
+%% Parameters
+%
+nDatabases = length(hrtfDatabaseList);
+nAzimuths = length(azimuthVector);
 % Request cues being extracted from the noisy mixture
 AFE_request = {'itd', 'ild', 'ic'};
-
 AFE_param = initialiseAfeParameters();
 
-% Define user-specific root directory for storing the feature space
-featRoot = fullfile(dataRoot, sprintf('DevFeatures_%ddeg_%dchannels', azRes, AFE_param.fb_nChannels));
-if ~exist(featRoot, 'dir')
-    mkdir(featRoot);
-end
-
-nAzimuths = length(azimuthVector);
-
-%% Sound databases
-%
-rootGRID = fullfile(xml.dbPath, 'sound_databases', 'grid_subset');
 
 % Test set
 flist = 'flist_dev.txt';
@@ -88,11 +79,10 @@ mObj = manager(dObj, AFE_request, AFE_param);
 
 %% Framework for creating noisy speech
 %
-%
 % Create channel folders
 channelRoot = cell(AFE_param.fb_nChannels, 1);
 for c = 1:AFE_param.fb_nChannels
-    channelRoot{c} = fullfile(featRoot, sprintf('channel%d', c));
+    channelRoot{c} = fullfile(dirFeatDev, sprintf('channel%d', c));
     if ~exist(channelRoot{c}, 'dir')
         mkdir(channelRoot{c});
     end
@@ -119,31 +109,30 @@ for ii = 1:nMixtures
     centreSample = floor(length(target) / 2);
     target = target((centreSample-fsTarget/2+1):(centreSample+fsTarget/2));
 
-    % Upsampel input to FS_HRTF, if required
-    if fsTarget ~= FS_HRTF
-        target = resample(target, FS_HRTF, fsTarget);
-    end
-
     % Normalise by RMS
     target = target ./ rms(target);
 
-    for jj = 1:nAzimuths
+    for nn = 1:nDatabases
 
-        azimuth = azimuthVector(jj);
+        fsBrir = brirSofa{nn}.Data.SamplingRate;
+        if fsTarget ~= fsBrir
+            targetResampled = resample(target, fsBrir, fsTarget);
+        else
+            targetResampled = target;
+        end
 
-        for nn = 1:nDatabases
+        for jj = 1:nAzimuths
+
+            azimuth = azimuthVector(jj);
 
             % Spatialise speech signal
-            % FIXME: switch database and azimuth loop?
             brir = sofa.getImpulseResponse(brirSofa{nn}, azimuth);
             binaural = convolution(brir, target);
-            %binaural = spatializeAudio(target, FS_HRTF, azimuth, brir{nn});
 
-            % Resample speech signal to FS_MIXTURES_Mix
-            if FS_MIXTURES ~= FS_HRTF
-                binaural = resample(binaural, FS_MIXTURES, FS_HRTF);
+            % Resample speech signal to FS_MIXTURES
+            if FS_MIXTURES ~= fsBrir
+                binaural = resample(binaural, FS_MIXTURES, fsBrir);
             end
-
 
             % *****************************************************
             % AFE: COMPUTE BINAURAL CUES

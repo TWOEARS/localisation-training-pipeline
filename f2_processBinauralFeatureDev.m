@@ -1,44 +1,49 @@
 function f2_processBinauralFeatureDev(channelVector, preset, azRes)
+%f2_processBinauralFeatureDev ...
 %
-% f2_processBinauralFeatureDev(channels, azRes)
+%   USAGE
+%       f2_processBinauralFeatureDev(channels, azRes)
 %
-%  channels : channel vector for processing 1:32
-%
+%   INPUT PARAMETERS
+%       channelVector   -
+%       preset          -
+%       azRes           -
 
 if nargin < 3
     azRes = 5;
 end
-
 if nargin < 2
     preset = 'MCT-DIFFUSE';
 end
 
-%% Install software 
-% 
-dataRoot = get_data_root;
 
-% Get to correct directory and add working directories to path
-gitRoot = fileparts(fileparts(mfilename('fullpath')));
-
+%% Setup software
+%
 % Add local tools
 addpath Tools
 
-% Add common scripts
-addpath([gitRoot, filesep, 'tools', filesep, 'common']);
+
+%% Folder assingment
+%
+% Tmp folders for training features
+[dirFeat, dirFeatDev] = getTmpDirTraining(preset, azRes);
+if ~exist(dirFeat, 'dir')
+    error(['Please run first f1_createBinauralFeatureTrain() in order to create ', ...
+           'missing features.']);
+end
+if ~exist(dirFeatDev, 'dir')
+    error(['Please run first f1_createBinauralFeatureDev() in order to create ', ...
+           'missing features.']);
+end
 
 
 testAzimuths = convertAzimuthsSurreyToWP1(-90:5:90);
 
 AFE_param = initialiseAfeParameters;
 
-featRootTrain = fullfile(dataRoot, 'TrainFeatures');
-featRootTrain = sprintf('%s_%s_%ddeg_%dchannels', featRootTrain, preset, azRes, AFE_param.fb_nChannels);
-strSaveStr = fullfile(featRootTrain, preset);
+strSaveStr = fullfile(dirFeat, preset);
 load(strSaveStr);
-
-featRoot = fullfile(dataRoot, 'DevFeatures');
-featRoot = sprintf('%s_%ddeg_%dchannels', featRoot, azRes, AFE_param.fb_nChannels);
-strSaveStr = fullfile(featRoot, preset);
+strSaveStr = fullfile(dirFeatDev, preset);
 
 nChannels = R.AFE_param.fb_nChannels;
 if nargin < 1
@@ -47,7 +52,7 @@ end
 normFactors = cell(nChannels, 1);
 for ch = 1:nChannels
     % Load norm factors from train set
-    C = load(fullfile(featRootTrain, sprintf('%s_channel%d.mat', preset, ch)), 'normFactors');
+    C = load(fullfile(dirFeat, sprintf('%s_channel%d.mat', preset, ch)), 'normFactors');
     normFactors{ch} = C.normFactors;
 end
 
@@ -80,7 +85,7 @@ for ch = channelVector
         end
         fprintf('Preparing features for channel %d, azimuth %d... ', ch, az);
         azFrames = 0;
-        chandir = sprintf('%s/channel%d',featRoot,ch);
+        chandir = sprintf('%s/channel%d', dirFeatDev, ch);
         htkfiles = sprintf('%s/az%d_*.htk', chandir, az);
         % Retrieve all file names per azimuth
         all_files = dir(htkfiles);
