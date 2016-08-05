@@ -1,9 +1,9 @@
-function f3_trainGMMs(preset, featureType, azRes)
-% f3_trainGMMs  Sound localisation using Gaussian mixture models
+function f3_trainGmmLocationKS(preset, featureType, azRes)
+% f3_trainGmmLocationKS  Sound localisation using Gaussian mixture models
 %
 % 
 %USAGE  
-%  f3_trainGMMs(channel, preset, featureType, azRes)
+%  f3_trainGmmLocationKS(channel, preset, featureType, azRes)
 %
 %INPUT ARGUMENTS
 %     channel : channel number for training. Useful for parellel training

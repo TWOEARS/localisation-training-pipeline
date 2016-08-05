@@ -1,9 +1,9 @@
-function f3_trainDNNs(channel, preset, featureType, azRes)
-% f3_trainDNNs  Sound localisation using Deep Neural Network.
+function f3_trainDnnLocationsKS(channel, preset, featureType, azRes)
+% f3_trainDnnLocationKS  Sound localisation using Deep Neural Network.
 %
 %
 %USAGE
-%  f3_trainDNNs(channel, preset, featureType, azRes)
+%  f3_trainDnnLocationKS(channel, preset, featureType, azRes)
 %
 %INPUT ARGUMENTS
 %   channel : channel number for training. Useful for parellel training
