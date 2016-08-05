@@ -13,7 +13,7 @@ function f3_trainDNNs(channel, preset, featureType, azRes)
 % Ning Ma, 29 Jan 2015
 %
 
-if nargin < 5
+if nargin < 4
     azRes = 5;
 end
 
