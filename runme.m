@@ -7,8 +7,9 @@
 % Contact Ning Ma (n.ma@sheffield.ac.uk) for any problem.
 %
 
+startTwoEars('Config.xml');
 
-%% Define parameters
+%% ===== Configuration =====
 %
 % Need to set up relevant paths in get_data_root.m
 %   dataRoot    - default root for storing features etc
@@ -19,31 +20,29 @@ preset = 'MCT-DIFFUSE';         % Multiconditional training
 azRes = 1;                      % Azimuth resolution in degrees
 azimuthVector = 0:azRes:359;	% Vector of azimuths considered
 
-startTwoEars('Config.xml');
 
-%% Create training and development features
+%% ===== Create training and development features =====
 %
 % Create raw features
 f1_createBinauralFeatureTrain(azimuthVector, preset, azRes);
 f1_createBinauralFeatureDev(azimuthVector, azRes);
-
+%
 % Process features (normalisation etc)
-AFE_param = initialise_AFE_parameters;
+AFE_param = initialiseAfeParameters();
 channelVector = 1:AFE_param.fb_nChannels;
 f2_processBinauralFeatureTrain(channelVector, preset, azRes);
 f2_processBinauralFeatureDev(channelVector, preset, azRes);
 
 
-%% Start training
+%% ===== Train models =====
 %
-% Use 'itd-ild' for training GMMs
+% Use 'itd-ild' for training GmmLocationKS
 featureType = 'itd-ild';
-f3_trainGMMs(preset, featureType, azRes);
-
-% Use 'ild-cc' for training DNNs
+f3_trainGmmLocationKS(preset, featureType, azRes);
+% Use 'ild-cc' for training DnnLocationKS
 featureType = 'ild-cc';
-for ch = channelVector
-    f3_trainDNNs(ch, preset, featureType, azRes);
+for channel = channelVector
+    f3_trainDnnLocationKS(channel, preset, featureType, azRes);
 end
 
-
+% vim: set sw=4 ts=4 et tw=90:

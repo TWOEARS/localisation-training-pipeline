@@ -1,19 +1,21 @@
-function f3_trainDNNs(channel, preset, featureType, azRes)
-% f3_trainDNNs  Sound localisation using Deep Neural Network.
+function f3_trainDnnLocationsKS(channel, preset, featureType, azRes)
+%f3_trainDnnLocationKS  Sound localisation using Deep Neural Network.
 %
-% 
-%USAGE  
-%  f3_trainDNNs(channel, preset, featureType, azRes)
+%   USAGE
+%       f3_trainDnnLocationKS(channel, preset, featureType, azRes)
 %
-%INPUT ARGUMENTS
-%   channel : channel number for training. Useful for parellel training
-%     azRes : azimuth resolution for training DNNs
-% 
-%
+%   INPUT PARAMETERS
+%       channel     - channel number for training. Useful for parellel training
+%       preset      - 'MCT-DIFFUSE' for multi-conditional training or
+%                     'CLEAN' for clean training
+%       featureType - 'itd-ild' or 'cc-ild'
+%       azRes       - azimuth resolution for training DNNs
+
+
 % Ning Ma, 29 Jan 2015
 %
 
-if nargin < 5
+if nargin < 4
     azRes = 5;
 end
 
@@ -30,29 +32,40 @@ nHiddenLayers = numel(nHiddenNodes);
 
 %% Setup software
 %
-% Get to correct directory and add working directories to path
-gitRoot = fileparts(fileparts(mfilename('fullpath')));
-dataRoot = get_data_root;
-
 % Add local tools
 addpath Tools
-
-% Add common scripts
-addpath([gitRoot, filesep, 'tools', filesep, 'common']);
-
-% Add DeepLearnToolbox 
-addpath(genpath([gitRoot, filesep, 'tools', filesep, 'DeepLearnToolbox']));
-
+% Add DeepLearnToolbox
+addpath(genpath(fullfile('Tools', 'DeepLearnToolbox')));
 % Reset internal states of random number generator. This allows to use
 % different settings, while still obtaining the "same" random matrix with
 % sound source positions.
 try
-    % Since MATLAB 2011a 
+    % Since MATLAB 2011a
     rng(0);
 catch
     % For older versions
-    rand('seed',0); %#ok
+    rand('seed',0);
 end
+
+
+%% Folder assignment
+%
+% Local folder for learned model storage
+dirData = fullfile('learned_models', 'DnnLocationKS');
+if ~exist(dirData, 'dir')
+    mkdir(dirData);
+end
+% Tmp folders for training features
+[dirFeat, dirFeatDev] = getTmpDirTraining(preset, azRes);
+if ~exist(dirFeat)
+    error(['Please run first f1_createBinauralFeatureTrain() and ', ...
+           'f2_processBinauralFeatureTrain() in order to create missing features.']);
+end
+if ~exist(dirFeatDev)
+    error(['Please run first f1_createBinauralFeatureDev() and ', ...
+           'f2_processBinauralFeatureDev() in order to create missing features.']);
+end
+
 
 %% Setup features
 %
@@ -76,23 +89,9 @@ for n = 1:length(features)
     end
 end
 
-% Define user-specific root directory for storing the models
-AFE_param = initialise_AFE_parameters;
-strRootFeat = fullfile(dataRoot, 'TrainFeatures');
-strRootFeat = sprintf('%s_%s_%ddeg_%dchannels', strRootFeat, preset, azRes, AFE_param.fb_nChannels);
 
-strRootFeatDev = fullfile(dataRoot, 'DevFeatures');
-strRootFeatDev = sprintf('%s_%ddeg_%dchannels', strRootFeatDev, azRes, AFE_param.fb_nChannels);
-
-strRootModels = fullfile(dataRoot, 'LearnedDNNs');
-strRootModels = sprintf('%s_%s_%s_%ddeg_%dchannels', strRootModels, preset, featureType, azRes, AFE_param.fb_nChannels);
-if ~exist(strRootModels, 'dir')
-    mkdir(strRootModels);
-end
-
-%% Setup NN
+%% Setup DNN
 %
-
 fprintf('==== Training DNN (%d hidden layers) [', nHiddenLayers);
 for n=1:nHiddenLayers
     fprintf(' %d', nHiddenNodes(n));
@@ -100,7 +99,7 @@ end
 fprintf(' ] for channel %d\n', channel);
 
 fprintf('Loading train set... ');
-strFeatNN = fullfile(strRootFeat, sprintf('%s_channel%d', preset, channel));
+strFeatNN = fullfile(dirFeat, sprintf('%s_channel%d', preset, channel));
 load(strFeatNN);
 
 if sum(featureIdx==3)
@@ -114,7 +113,7 @@ normFactors = normFactors(:,featureIdx);
 fprintf('done. Loaded %d x %d features (%s)\n', size(train_x,1), size(train_x,2), featureType);
 
 fprintf('Loading dev set... ');
-strFeatDev = fullfile(strRootFeatDev, sprintf('%s_channel%d', preset, channel));
+strFeatDev = fullfile(dirFeatDev, sprintf('%s_channel%d', preset, channel));
 load(strFeatDev);
 dev_x = dev_x(:,featureIdx);
 fprintf('done. Loaded %d x %d features (%s)\n', size(dev_x,1), size(dev_x,2), featureType);
@@ -124,15 +123,13 @@ nChannels = R.GFB.nFilter;
 nFeatures = size(train_x, 2);
 nTrainBatches = size(train_x, 1) / miniBatchSize;
 
-
 C = struct('ftrType', featureType, ...
            'azimuths', R.azimuth, ...
            'normFactors', normFactors, ...
            'nAzimuths', nAzimuths, ...
            'nFeatures', nFeatures, ...
            'AFE_param', {R.AFE_param}, ...
-           'AFE_request_mix', {R.AFE_request_mix});
-
+           'AFE_requestMix', {R.AFE_requestMix});
 
 % Initialise a neural network with a single hidden layer
 nCurHiddenLayers = 1;
@@ -152,6 +149,7 @@ nn.weightPenaltyL2 = 0;
 
 
 %% Train the neural network
+%
 [~, train_ref] = max(train_y,[],2);
 nDevBatches = floor(size(dev_x,1)/miniBatchSize);
 nDevFrames = nDevBatches * miniBatchSize;
@@ -168,7 +166,7 @@ while true
     fprintf(' ]\n');
 
     strModels = sprintf('%s/DNN_%s_%ddeg_%dchannels_channel%d_%dlayers', ...
-        strRootModels, preset, azRes, nChannels, channel, nCurHiddenLayers);
+        dirData, preset, azRes, nChannels, channel, nCurHiddenLayers);
     strModels = strcat(strModels, '.mat');
     if exist(strModels, 'file')
         fprintf('NN has been trained.\n');
@@ -184,7 +182,7 @@ while true
         else
             nIterations = 1;
         end
-        
+
         bestDevError = 1;
         bestNN = nn;
         for iter = 1:nIterations
@@ -198,15 +196,17 @@ while true
             else
                 nn.learningRate = opt.initial_learning_rate;
             end
-            
+
             nEpochsExtraCounter = 0;
             prevDevError = 1;
             noImprovmentCount = 0;
             for m = 1 : opt.max_num_epochs
                 if nEpochsExtraCounter == 0
-                    fprintf('-- %s\n   epoch %d: learning rate %.5f... ', datestr(now), m, nn.learningRate);
+                    fprintf('-- %s\n   epoch %d: learning rate %.5f... ', ...
+                            datestr(now), m, nn.learningRate);
                 else
-                    fprintf('-- %s\n   epoch %d (extra epoch %d): learning rate %.5f... ', datestr(now), m, nEpochsExtraCounter, nn.learningRate);
+                    fprintf('-- %s\n   epoch %d (extra epoch %d): learning rate %.5f... ', ...
+                            datestr(now), m, nEpochsExtraCounter, nn.learningRate);
                 end
                 tstart = tic;
                 for k = 1 : nTrainBatches
@@ -282,7 +282,7 @@ while true
                 nn.learningRate = nn.learningRate * opt.scaling_learning_rate;
                 if nn.learningRate < opt.final_learning_rate
                     nn.learningRate = opt.final_learning_rate;
-                    nEpochsExtraCounter = nEpochsExtraCounter + 1; 
+                    nEpochsExtraCounter = nEpochsExtraCounter + 1;
                 end
 
                 % Terminate after nEpochsExtra epochs when the learning rate
@@ -290,7 +290,7 @@ while true
                 if nEpochsExtraCounter > opt.num_epochs_extra
                     break;
                 end
-                
+
             end
             if C.devError > bestDevError
                 fprintf('-- Revert to previous best state, dev error: %.2f%%\n', bestDevError*100);
@@ -307,7 +307,7 @@ while true
         fprintf('%s\n', strModels);
 
     end
- 
+
     % Check the number of hidden layers
     if nCurHiddenLayers == nHiddenLayers
         break;
@@ -322,4 +322,4 @@ while true
     nn.p{end}   = nn2.p{end-1};     nn.p{end+1}     = nn2.p{end};
 end
 
-
+% vim: set sw=4 ts=4 et tw=90:
